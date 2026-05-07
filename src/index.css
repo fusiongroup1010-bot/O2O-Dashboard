@@ -1,0 +1,55 @@
+@import 'antd/dist/reset.css';
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+    'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f0f2f5;
+}
+
+.marquee-container {
+  background-color: #fffbe6;
+  border: 1px solid #ffe58f;
+  padding: 8px 16px;
+  overflow: hidden;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Đứng yên ở giữa */
+}
+
+.marquee-content {
+  display: inline-block;
+  color: #d46b08;
+  font-weight: 500;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(100vw); }
+  100% { transform: translateX(-100%); }
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1890ff; /* Primary Blue */
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e6f7ff;
+}
+
+/* Custom Card padding for tighter layout */
+.ant-card-body {
+  padding: 16px !important;
+}
+
+/* Tooltip styles for Recharts */
+.custom-tooltip {
+  background-color: white;
+  border: 1px solid #d9d9d9;
+  padding: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
