@@ -11,6 +11,10 @@ const ExcelEditor = () => {
   const { dashboardData, updateAllData, allData, selectedDate } = useDashboard();
   const [localData, setLocalData] = useState(null);
   const [activeTab, setActiveTab] = useState('1');
+  const [isColModalOpen, setIsColModalOpen] = useState(false);
+  const [colModalData, setColModalData] = useState({ sheetKey: '', refKey: '', direction: '' });
+  const [newColName, setNewColName] = useState('');
+
 
   useEffect(() => {
     setLocalData(JSON.parse(JSON.stringify(dashboardData)));
@@ -76,12 +80,20 @@ const ExcelEditor = () => {
   };
 
   // --- Dynamic Columns & Context Menu ---
-  const handleInsertColumn = (sheetKey, referenceColKey, direction) => {
-    const colName = prompt("Nhập tên cột mới / Enter new column name:");
-    if (!colName) return;
-    
+  const openInsertModal = (sheetKey, refKey, direction) => {
+    setColModalData({ sheetKey, refKey, direction });
+    setNewColName('');
+    setIsColModalOpen(true);
+  };
+
+  const handleConfirmInsert = () => {
+    if (!newColName) {
+      message.warning('Vui lòng nhập tên cột! / Please enter column name!');
+      return;
+    }
+    const { sheetKey, refKey, direction } = colModalData;
     const colId = 'custom_' + Date.now();
-    const afterCol = direction === 'right' ? referenceColKey : (direction === 'left_of' ? referenceColKey : 'START');
+    const afterCol = direction === 'right' ? refKey : refKey; 
     
     setLocalData(prev => {
       const existing = prev.customColumns?.[sheetKey] || [];
@@ -89,10 +101,12 @@ const ExcelEditor = () => {
         ...prev,
         customColumns: {
           ...prev.customColumns,
-          [sheetKey]: [...existing, { id: colId, name: colName, after: afterCol }]
+          [sheetKey]: [...existing, { id: colId, name: newColName, after: afterCol }]
         }
       };
     });
+    setIsColModalOpen(false);
+    message.success('Đã thêm cột! Nhấn Lưu để hoàn tất. / Column added! Click Save to finish.');
   };
 
   const handleDeleteColumn = (sheetKey, colId) => {
@@ -115,8 +129,8 @@ const ExcelEditor = () => {
       ...(isCustom ? [{ type: 'divider' }, { key: 'delete', label: 'Xóa cột này / Delete Column', danger: true }] : [])
     ],
     onClick: (e) => {
-      if (e.key === 'insert_left') handleInsertColumn(sheetKey, prevColKey, 'left');
-      else if (e.key === 'insert_right') handleInsertColumn(sheetKey, colKey, 'right');
+      if (e.key === 'insert_left') openInsertModal(sheetKey, prevColKey, 'right');
+      else if (e.key === 'insert_right') openInsertModal(sheetKey, colKey, 'right');
       else if (e.key === 'delete') handleDeleteColumn(sheetKey, colKey);
     }
   });
@@ -179,7 +193,7 @@ const ExcelEditor = () => {
   // --- Static Column Definitions ---
   const t = (k, vi, en, render, width) => ({ key: k, dataIndex: k, titleVi: vi, titleEn: en, render, width });
   const tInp = (s, k, vi, en) => t(k, vi, en, (v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange(s, i, k, e.target.value)} />);
-  const tNum = (s, k, vi, en) => t(k, vi, en, (v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange(s, i, k, isNaN(e.target.value) ? 0 : Number(e.target.value))} />);
+  const tNum = (s, k, vi, en) => t(k, vi, en, (v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange(s, i, k, e.target.value)} />);
   const tUnit = (s, k) => t(k, 'Đơn vị', 'Unit', (v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange(s, i, k, e.target.value)} style={{width: 80, color: '#888'}} />);
   const tDate = (s) => t('date', 'Ngày', 'Date', (v, _, i) => <DatePicker value={v ? dayjs(v, 'YYYY-MM-DD') : dayjs(selectedDate, 'YYYY-MM-DD')} format="YYYY-MM-DD" onChange={(_, ds) => handleArrayChange(s, i, 'date', ds || selectedDate)} style={{width: '100%'}} />, 140);
 
@@ -333,6 +347,24 @@ const ExcelEditor = () => {
             );
           })}
         </Tabs>
+
+        <Modal
+          title="Thêm cột mới / Add New Column"
+          open={isColModalOpen}
+          onOk={handleConfirmInsert}
+          onCancel={() => setIsColModalOpen(false)}
+          okText="Thêm / Add"
+          cancelText="Hủy / Cancel"
+        >
+          <div style={{ marginBottom: 8 }}>Tên cột / Column Name:</div>
+          <Input 
+            autoFocus
+            value={newColName} 
+            onChange={e => setNewColName(e.target.value)} 
+            onPressEnter={handleConfirmInsert}
+            placeholder="VD: Ghi chú 2, % Thu hồi..."
+          />
+        </Modal>
       </Card>
     </div>
   );

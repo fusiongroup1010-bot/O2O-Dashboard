@@ -78,6 +78,9 @@ const CustomChartModal = ({ open, onCancel, targetZone }) => {
           <Select>
             <Select.Option value="bar">Biểu đồ Cột (Bar Chart)</Select.Option>
             <Select.Option value="line">Biểu đồ Đường (Line Chart)</Select.Option>
+            <Select.Option value="pie">Biểu đồ Tròn (Pie Chart)</Select.Option>
+            <Select.Option value="gauge">Biểu đồ Thước đo (Gauge Chart)</Select.Option>
+            <Select.Option value="bubble">Biểu đồ Bong bóng (Bubble Chart)</Select.Option>
           </Select>
         </Form.Item>
         <Form.Item name="xAxis" label="Trục X (X-Axis)" rules={[{ required: true }]}>

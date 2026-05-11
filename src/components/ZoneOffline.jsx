@@ -5,6 +5,8 @@ import ReactECharts from 'echarts-for-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, LineChart, Line
 } from 'recharts';
+import CustomChartRenderer from './CustomChartRenderer';
+
 
 const ZoneOffline = ({ data, onEnlarge, customCharts = [], onDeleteChart }) => {
 
@@ -77,27 +79,8 @@ const ZoneOffline = ({ data, onEnlarge, customCharts = [], onDeleteChart }) => {
       </Col>
       {customCharts.map(chart => {
         const chartData = data[chart.sheetKey] || [];
-        const content = (
-          <ResponsiveContainer width="100%" height="100%">
-            {chart.type === 'bar' ? (
-              <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey={chart.xAxis} fontSize={11} />
-                <YAxis fontSize={11} />
-                <RechartsTooltip cursor={{ fill: '#e6f7ff' }} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-                <Bar dataKey={chart.yAxis} fill="#1890ff" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            ) : (
-              <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey={chart.xAxis} fontSize={11} />
-                <YAxis fontSize={11} />
-                <RechartsTooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-                <Line type="monotone" dataKey={chart.yAxis} stroke="#1890ff" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-              </LineChart>
-            )}
-          </ResponsiveContainer>
-        );
+        const content = <CustomChartRenderer chart={chart} chartData={chartData} />;
+
         return (
           <Col span={24} key={chart.id}>
             <Card 
