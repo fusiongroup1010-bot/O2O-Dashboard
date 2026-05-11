@@ -12,7 +12,6 @@ import {
 
 import Dashboard from './pages/Dashboard';
 import ExcelUpload from './pages/ExcelUpload';
-import AlertCenter from './pages/AlertCenter';
 import Admin from './pages/Admin';
 import { DataProvider, useDashboard } from './context/DataContext';
 
@@ -26,15 +25,19 @@ const AppContent = () => {
   const menuItems = [
     { key: '/', icon: <DashboardOutlined />, label: <Link to="/"><div style={{lineHeight: '1.2'}}><div style={{fontSize: 14}}>Bảng điều khiển</div><div style={{fontSize: 11, color: '#888'}}>Dashboard</div></div></Link> },
     { key: '/upload', icon: <UploadOutlined />, label: <Link to="/upload"><div style={{lineHeight: '1.2'}}><div style={{fontSize: 14}}>Quản lý dữ liệu</div><div style={{fontSize: 11, color: '#888'}}>Data Manager</div></div></Link> },
-    { key: '/alerts', icon: <BellOutlined />, label: <Link to="/alerts"><div style={{lineHeight: '1.2'}}><div style={{fontSize: 14}}>Trung tâm cảnh báo</div><div style={{fontSize: 11, color: '#888'}}>Alert Center</div></div></Link> },
     { key: '/admin', icon: <SettingOutlined />, label: <Link to="/admin"><div style={{lineHeight: '1.2'}}><div style={{fontSize: 14}}>Quản trị</div><div style={{fontSize: 11, color: '#888'}}>Admin</div></div></Link> },
   ];
 
   const availableDates = Object.keys(allData).sort();
 
   // Lấy cảnh báo critical mới nhất để chạy trên Marquee
-  const criticalAlerts = (dashboardData.alertsLog || []).filter(a => a.type?.toUpperCase() === 'CRITICAL');
-  const marqueeText = criticalAlerts.map(a => a.message).join(' | ');
+  const autoCriticalAlerts = (dashboardData.csResponse || [])
+    .filter(r => (r.responseTime || 0) > (dashboardData.cauHinh?.csResponseMax || 5))
+    .map(r => ({ message: `CS Response ${r.responseTime} phút (> ${dashboardData.cauHinh?.csResponseMax || 5})` }));
+
+  const manualCriticalAlerts = (dashboardData.alertsLog || []).filter(a => a.type?.toUpperCase() === 'CRITICAL');
+  const allCriticalAlerts = [...manualCriticalAlerts, ...autoCriticalAlerts];
+  const marqueeText = allCriticalAlerts.map(a => a.message).join('  |  ');
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -76,7 +79,6 @@ const AppContent = () => {
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/upload" element={<ExcelUpload />} />
-              <Route path="/alerts" element={<AlertCenter />} />
               <Route path="/admin" element={<Admin />} />
             </Routes>
           </div>

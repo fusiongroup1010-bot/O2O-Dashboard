@@ -10,6 +10,7 @@ const { Title, Text } = Typography;
 const ExcelEditor = () => {
   const { dashboardData, updateAllData, allData, selectedDate } = useDashboard();
   const [localData, setLocalData] = useState(null);
+  const [activeTab, setActiveTab] = useState('1');
 
   useEffect(() => {
     setLocalData(JSON.parse(JSON.stringify(dashboardData)));
@@ -48,6 +49,42 @@ const ExcelEditor = () => {
     const newDataByDate = { ...allData, [selectedDate]: localData };
     updateAllData(newDataByDate);
     message.success('Đã lưu dữ liệu thành công! / Data saved successfully!');
+  };
+
+  const handleAddCustomColumn = () => {
+    const tabMap = {
+      '1': 'cauHinh', '2': 'onlineGmv', '3': 'onlineRoas', '4': 'adsConversion',
+      '5': 'inventorySku', '6': 'stockSafety', '7': 'orderStatus', '8': 'offlineTraffic',
+      '9': 'offlineSales', '10': 'skuSampling', '11': 'csResponse', '12': 'alertsLog'
+    };
+    const sheetKey = tabMap[activeTab];
+    if (sheetKey === 'cauHinh') {
+      message.warning('Không hỗ trợ thêm cột cho tab Cấu Hình');
+      return;
+    }
+    const colName = prompt("Nhập tên cột mới / Enter new column name:");
+    if (colName) {
+      setLocalData(prev => {
+        const existing = prev.customColumns?.[sheetKey] || [];
+        return {
+          ...prev,
+          customColumns: {
+            ...prev.customColumns,
+            [sheetKey]: [...existing, colName]
+          }
+        };
+      });
+    }
+  };
+
+  const renderCustomColumns = (sheetKey) => {
+    return localData.customColumns?.[sheetKey]?.map(colName => (
+      <Table.Column 
+        title={getColTitle(colName, 'Custom')} 
+        key={colName}
+        render={(_, r, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={r[colName] || ''} onChange={e => handleArrayChange(sheetKey, i, colName, e.target.value)} />} 
+      />
+    ));
   };
 
   const exportToExcel = () => {
@@ -100,6 +137,7 @@ const ExcelEditor = () => {
         title={<Title level={3} style={{ color: '#1890ff', margin: 0, lineHeight: 1.2 }}>Data Manager - Cập nhật dữ liệu<br/><span style={{fontSize: 14, color: '#888', fontWeight: 'normal'}}>Data Manager - Data Update</span></Title>}
         extra={
           <Space>
+            <Button type="dashed" icon={<PlusOutlined />} onClick={handleAddCustomColumn}>Thêm Cột (Add Column)</Button>
             <Button icon={<ExportOutlined />} onClick={exportToExcel}>Export Excel</Button>
             <Button type="primary" icon={<SaveOutlined />} onClick={handleSave}>Lưu / Save</Button>
           </Space>
@@ -109,7 +147,7 @@ const ExcelEditor = () => {
           Ngày / <span style={{fontSize: 12}}>Date</span>: <b>{selectedDate}</b>. Nhập liệu trực tiếp vào các ô dưới đây / <span style={{fontSize: 12}}>Input data directly into the cells below</span>.
         </Text>
 
-        <Tabs tabPosition="left" defaultActiveKey="1">
+        <Tabs tabPosition="left" defaultActiveKey="1" activeKey={activeTab} onChange={(key) => setActiveTab(key)}>
           {/* 02_Cau_Hinh */}
           <Tabs.TabPane tab="02_Cau_Hinh" key="1">
             <Title level={5} style={{lineHeight: 1.2}}>Cấu hình mục tiêu & Ngưỡng cảnh báo<br/><span style={{fontSize: 12, color: '#888', fontWeight: 'normal'}}>Target Configuration & Alert Thresholds</span></Title>
@@ -164,12 +202,18 @@ const ExcelEditor = () => {
               <Table.Column title={getColTitle('Kênh', 'Channel')} dataIndex="channel" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('onlineGmv', i, 'channel', e.target.value)} />} />
               <Table.Column title={getColTitle('Mục tiêu', 'Target')} dataIndex="target" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('onlineGmv', i, 'target', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
               <Table.Column title={getColTitle('GMV thực tế', 'Actual GMV')} dataIndex="actual" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('onlineGmv', i, 'actual', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
-              <Table.Column title={getColTitle('% Đạt', '% Achieved')} render={(_, r) => {
+              <Table.Column title={getColTitle('% Đạt', '% Achieved')} render={(_, r, i) => {
                 const pct = ((r.actual || 0) / (r.target || 1)) * 100;
-                return <Text strong>{pct.toFixed(1)}%</Text>;
+                const displayVal = r.override_pct !== undefined ? r.override_pct : pct.toFixed(1);
+                return <Input value={displayVal} onChange={e => handleArrayChange('onlineGmv', i, 'override_pct', e.target.value)} addonAfter="%" style={{ width: 100 }} />;
               }} />
-              <Table.Column title={getColTitle('Chênh lệch', 'Variance')} render={(_, r) => <Text>{((r.actual || 0) - (r.target || 0)).toLocaleString()}</Text>} />
+              <Table.Column title={getColTitle('Chênh lệch', 'Variance')} render={(_, r, i) => {
+                const variance = ((r.actual || 0) - (r.target || 0));
+                const displayVal = r.override_variance !== undefined ? r.override_variance : variance.toLocaleString();
+                return <Input value={displayVal} onChange={e => handleArrayChange('onlineGmv', i, 'override_variance', e.target.value)} style={{ width: 120 }} />;
+              }} />
               <Table.Column title={getColTitle('Ghi chú', 'Note')} dataIndex="note" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('onlineGmv', i, 'note', e.target.value)} />} />
+              {renderCustomColumns('onlineGmv')}
               <Table.Column {...actionColumn('onlineGmv')} />
             </Table>
           </Tabs.TabPane>
@@ -195,9 +239,10 @@ const ExcelEditor = () => {
               <Table.Column title={getColTitle('Kênh', 'Channel')} dataIndex="channel" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('onlineRoas', i, 'channel', e.target.value)} />} />
               <Table.Column title={getColTitle('Doanh thu Ads', 'Ads Revenue')} dataIndex="rev" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('onlineRoas', i, 'rev', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
               <Table.Column title={getColTitle('Chi phí Ads', 'Ads Spend')} dataIndex="spend" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('onlineRoas', i, 'spend', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
-              <Table.Column title="ROAS" render={(_, r) => {
+              <Table.Column title="ROAS" render={(_, r, i) => {
                 const roas = (r.spend || 0) > 0 ? ((r.rev || 0) / r.spend) : 0;
-                return <Text strong>{roas.toFixed(2)}</Text>;
+                const displayVal = r.override_roas !== undefined ? r.override_roas : roas.toFixed(2);
+                return <Input value={displayVal} onChange={e => handleArrayChange('onlineRoas', i, 'override_roas', e.target.value)} style={{ width: 80, fontWeight: 'bold' }} />;
               }} />
               <Table.Column title={getColTitle('Trạng thái', 'Status')} render={(_, r) => {
                 const roas = (r.spend || 0) > 0 ? ((r.rev || 0) / r.spend) : 0;
@@ -207,6 +252,7 @@ const ExcelEditor = () => {
                   {isCritical ? 'CRITICAL' : 'NORMAL'}
                 </span>;
               }} />
+              {renderCustomColumns('onlineRoas')}
               <Table.Column {...actionColumn('onlineRoas')} />
             </Table>
           </Tabs.TabPane>
@@ -232,10 +278,12 @@ const ExcelEditor = () => {
 
               <Table.Column title={getColTitle('Lượt click', 'Clicks')} dataIndex="clicks" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('adsConversion', i, 'clicks', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
               <Table.Column title={getColTitle('Đơn hàng', 'Orders')} dataIndex="orders" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('adsConversion', i, 'orders', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
-              <Table.Column title={getColTitle('Conv. (%)', 'Conv. (%)')} render={(_, r) => {
+              <Table.Column title={getColTitle('Conv. (%)', 'Conv. (%)')} render={(_, r, i) => {
                 const conv = (r.clicks || 0) > 0 ? ((r.orders || 0) / r.clicks) * 100 : 0;
-                return <Text strong>{conv.toFixed(2)}%</Text>;
+                const displayVal = r.override_conv !== undefined ? r.override_conv : conv.toFixed(2);
+                return <Input value={displayVal} onChange={e => handleArrayChange('adsConversion', i, 'override_conv', e.target.value)} addonAfter="%" style={{ width: 100, fontWeight: 'bold' }} />;
               }} />
+              {renderCustomColumns('adsConversion')}
               <Table.Column {...actionColumn('adsConversion')} />
             </Table>
           </Tabs.TabPane>
@@ -243,7 +291,7 @@ const ExcelEditor = () => {
           {/* 06_Inventory_SKU */}
           <Tabs.TabPane tab="06_Inventory_SKU" key="5">
             <Table dataSource={localData.inventorySku?.map((r, i) => ({ ...r, key: i })) || []} pagination={false} size="small" bordered scroll={{ x: 'max-content' }}
-              footer={() => <Button type="dashed" onClick={() => addRow('inventorySku', { date: selectedDate, sku: 'Mới', name: '', ads: 0, inventory: 0, salesPerDay: 1 })} block icon={<PlusOutlined />}>Thêm SKU / Add SKU</Button>}>
+              footer={() => <Button type="dashed" onClick={() => addRow('inventorySku', { date: selectedDate, sku: 'Mới', name: '', inventory: 0, salesPerDay: 1 })} block icon={<PlusOutlined />}>Thêm SKU / Add SKU</Button>}>
               <Table.Column 
                 title={getColTitle('Ngày', 'Date')} 
                 dataIndex="date" 
@@ -260,11 +308,11 @@ const ExcelEditor = () => {
               <Table.Column title={getColTitle('Mã SKU', 'SKU Code')} dataIndex="sku" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('inventorySku', i, 'sku', e.target.value)} />} />
               <Table.Column title={getColTitle('Tên sản phẩm', 'Product Name')} dataIndex="name" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('inventorySku', i, 'name', e.target.value)} />} />
               <Table.Column title={getColTitle('Tồn kho', 'Inventory')} dataIndex="inventory" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('inventorySku', i, 'inventory', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
-              <Table.Column title={getColTitle('Chi phí Ads ($)', 'Ads Spend ($)')} dataIndex="ads" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('inventorySku', i, 'ads', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
               <Table.Column title={getColTitle('Bán/ngày TB', 'Avg Daily Sales')} dataIndex="salesPerDay" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('inventorySku', i, 'salesPerDay', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
-              <Table.Column title={getColTitle('Số ngày tồn còn lại', 'Remaining Days')} render={(_, r) => {
+              <Table.Column title={getColTitle('Số ngày tồn còn lại', 'Remaining Days')} render={(_, r, i) => {
                 const days = (r.salesPerDay || 0) > 0 ? ((r.inventory || 0) / r.salesPerDay) : 0;
-                return <Text strong>{days.toFixed(1)}</Text>;
+                const displayVal = r.override_days !== undefined ? r.override_days : days.toFixed(1);
+                return <Input value={displayVal} onChange={e => handleArrayChange('inventorySku', i, 'override_days', e.target.value)} style={{ width: 80, fontWeight: 'bold' }} />;
               }} />
               <Table.Column title={getColTitle('Cảnh báo', 'Alert')} render={(_, r) => {
                 const days = (r.salesPerDay || 0) > 0 ? ((r.inventory || 0) / r.salesPerDay) : 0;
@@ -274,6 +322,7 @@ const ExcelEditor = () => {
                   {isCritical ? 'CRITICAL' : 'NORMAL'}
                 </span>;
               }} />
+              {renderCustomColumns('inventorySku')}
               <Table.Column {...actionColumn('inventorySku')} />
             </Table>
           </Tabs.TabPane>
@@ -297,7 +346,11 @@ const ExcelEditor = () => {
               />
               <Table.Column title={getColTitle('Tồn kho tổng', 'Total Stock')} dataIndex="current" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('stockSafety', i, 'current', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
               <Table.Column title={getColTitle('Safety Stock (ref)', 'Safety Stock')} dataIndex="safety" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('stockSafety', i, 'safety', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
-              <Table.Column title={getColTitle('Chênh lệch', 'Variance')} render={(_, r) => <Text>{((r.current || 0) - (r.safety || 0)).toLocaleString()}</Text>} />
+              <Table.Column title={getColTitle('Chênh lệch', 'Variance')} render={(_, r, i) => {
+                const variance = ((r.current || 0) - (r.safety || 0));
+                const displayVal = r.override_variance !== undefined ? r.override_variance : variance.toLocaleString();
+                return <Input value={displayVal} onChange={e => handleArrayChange('stockSafety', i, 'override_variance', e.target.value)} style={{ width: 120 }} />;
+              }} />
               <Table.Column title={getColTitle('Trạng thái', 'Status')} render={(_, r) => {
                 const diff = (r.current || 0) - (r.safety || 0);
                 const isNormal = diff >= 0;
@@ -306,6 +359,7 @@ const ExcelEditor = () => {
                 </span>;
               }} />
               <Table.Column title={getColTitle('Ghi chú', 'Note')} dataIndex="note" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('stockSafety', i, 'note', e.target.value)} />} />
+              {renderCustomColumns('stockSafety')}
               <Table.Column {...actionColumn('stockSafety')} />
             </Table>
           </Tabs.TabPane>
@@ -331,12 +385,15 @@ const ExcelEditor = () => {
               <Table.Column title={getColTitle('Đơn thành công', 'Successful')} dataIndex="success" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('orderStatus', i, 'success', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
               <Table.Column title={getColTitle('Đơn huỷ', 'Cancelled')} dataIndex="cancelled" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('orderStatus', i, 'cancelled', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
               <Table.Column title={getColTitle('Đơn hoàn', 'Returned')} dataIndex="returned" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('orderStatus', i, 'returned', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
-              <Table.Column title={getColTitle('% Huỷ+Hoàn', '% Bad Orders')} render={(_, r) => {
+              <Table.Column title={getColTitle('% Huỷ+Hoàn', '% Bad Orders')} render={(_, r, i) => {
                 const total = r.total || 1;
                 const bad = (r.cancelled || 0) + (r.returned || 0);
-                return <Text strong>{((bad / total) * 100).toFixed(1)}%</Text>;
+                const pct = ((bad / total) * 100);
+                const displayVal = r.override_bad_pct !== undefined ? r.override_bad_pct : pct.toFixed(1);
+                return <Input value={displayVal} onChange={e => handleArrayChange('orderStatus', i, 'override_bad_pct', e.target.value)} addonAfter="%" style={{ width: 100, fontWeight: 'bold' }} />;
               }} />
               <Table.Column title={getColTitle('Ghi chú', 'Note')} dataIndex="note" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('orderStatus', i, 'note', e.target.value)} />} />
+              {renderCustomColumns('orderStatus')}
               <Table.Column {...actionColumn('orderStatus')} />
             </Table>
           </Tabs.TabPane>
@@ -344,7 +401,7 @@ const ExcelEditor = () => {
           {/* 09_Offline_Traffic */}
           <Tabs.TabPane tab="09_Offline_Traffic" key="8">
              <Table dataSource={localData.offlineTraffic?.map((r, i) => ({ ...r, key: i })) || []} pagination={false} size="small" bordered scroll={{ x: 'max-content' }}
-              footer={() => <Button type="dashed" onClick={() => addRow('offlineTraffic', { date: selectedDate, time: '00:00', location: 'Cửa hàng', visitors: 0, note: '' })} block icon={<PlusOutlined />}>Thêm Giờ / Add Time</Button>}>
+              footer={() => <Button type="dashed" onClick={() => addRow('offlineTraffic', { date: selectedDate, region: 'Miền Nam', store: 'Cửa hàng', shopsCheckedIn: 0, note: '' })} block icon={<PlusOutlined />}>Thêm dòng / Add Row</Button>}>
               <Table.Column 
                 title={getColTitle('Ngày', 'Date')} 
                 dataIndex="date" 
@@ -358,18 +415,19 @@ const ExcelEditor = () => {
                   />
                 )} 
               />
-              <Table.Column title={getColTitle('Giờ', 'Time')} dataIndex="time" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('offlineTraffic', i, 'time', e.target.value)} />} />
-              <Table.Column title={getColTitle('Điểm bán / Sự kiện', 'Location / Event')} dataIndex="location" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('offlineTraffic', i, 'location', e.target.value)} />} />
-              <Table.Column title={getColTitle('Lượt khách', 'Visitors')} dataIndex="visitors" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('offlineTraffic', i, 'visitors', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
+              <Table.Column title={getColTitle('Khu vực', 'Region')} dataIndex="region" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('offlineTraffic', i, 'region', e.target.value)} />} />
+              <Table.Column title={getColTitle('Điểm bán', 'Store')} dataIndex="store" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('offlineTraffic', i, 'store', e.target.value)} />} />
+              <Table.Column title={getColTitle('Số shop check in', 'Shops Checked-in')} dataIndex="shopsCheckedIn" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('offlineTraffic', i, 'shopsCheckedIn', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
               <Table.Column title={getColTitle('Ghi chú', 'Note')} dataIndex="note" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('offlineTraffic', i, 'note', e.target.value)} />} />
+              {renderCustomColumns('offlineTraffic')}
               <Table.Column {...actionColumn('offlineTraffic')} />
             </Table>
           </Tabs.TabPane>
 
-          {/* 10_QR_Funnel */}
-          <Tabs.TabPane tab="10_QR_Funnel" key="9">
-             <Table dataSource={localData.qrFunnel?.map((r, i) => ({ ...r, key: i })) || []} pagination={false} size="small" bordered scroll={{ x: 'max-content' }}
-              footer={() => <Button type="dashed" onClick={() => addRow('qrFunnel', { date: selectedDate, campaign: 'Chiến dịch', scan: 0, voucher: 0, cart: 0, checkout: 0 })} block icon={<PlusOutlined />}>Thêm Chiến dịch / Add Campaign</Button>}>
+          {/* 10_Offline_Sales */}
+          <Tabs.TabPane tab="10_Offline_Sales" key="9">
+             <Table dataSource={localData.offlineSales?.map((r, i) => ({ ...r, key: i })) || []} pagination={false} size="small" bordered scroll={{ x: 'max-content' }}
+              footer={() => <Button type="dashed" onClick={() => addRow('offlineSales', { date: selectedDate, region: 'Miền Nam', store: 'Cửa hàng', qtySold: 0, note: '' })} block icon={<PlusOutlined />}>Thêm dòng / Add Row</Button>}>
               <Table.Column 
                 title={getColTitle('Ngày', 'Date')} 
                 dataIndex="date" 
@@ -378,53 +436,47 @@ const ExcelEditor = () => {
                   <DatePicker 
                     value={v ? dayjs(v, 'YYYY-MM-DD') : dayjs(selectedDate, 'YYYY-MM-DD')} 
                     format="YYYY-MM-DD" 
-                    onChange={(date, dateStr) => handleArrayChange('qrFunnel', i, 'date', dateStr || selectedDate)} 
+                    onChange={(date, dateStr) => handleArrayChange('offlineSales', i, 'date', dateStr || selectedDate)} 
                     style={{width: '100%'}} 
                   />
                 )} 
               />
-              <Table.Column title={getColTitle('Chiến dịch', 'Campaign')} dataIndex="campaign" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('qrFunnel', i, 'campaign', e.target.value)} />} />
-              <Table.Column title={getColTitle('Scan QR', 'Scan QR')} dataIndex="scan" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('qrFunnel', i, 'scan', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
-              <Table.Column title={getColTitle('Collect Voucher', 'Collect Voucher')} dataIndex="voucher" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('qrFunnel', i, 'voucher', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
-              <Table.Column title={getColTitle('Add to Cart', 'Add to Cart')} dataIndex="cart" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('qrFunnel', i, 'cart', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
-              <Table.Column title={getColTitle('Checkout', 'Checkout')} dataIndex="checkout" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('qrFunnel', i, 'checkout', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
-              <Table.Column title={getColTitle('% Conversion', '% Conversion')} render={(_, r) => {
-                const scan = r.scan || 1;
-                const checkout = r.checkout || 0;
-                return <Text strong>{((checkout / scan) * 100).toFixed(1)}%</Text>;
-              }} />
-              <Table.Column {...actionColumn('qrFunnel')} />
+              <Table.Column title={getColTitle('Khu vực', 'Region')} dataIndex="region" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('offlineSales', i, 'region', e.target.value)} />} />
+              <Table.Column title={getColTitle('Điểm bán', 'Store')} dataIndex="store" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('offlineSales', i, 'store', e.target.value)} />} />
+              <Table.Column title={getColTitle('Lượng hàng bán được', 'Quantity Sold')} dataIndex="qtySold" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('offlineSales', i, 'qtySold', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
+              <Table.Column title={getColTitle('Ghi chú', 'Note')} dataIndex="note" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('offlineSales', i, 'note', e.target.value)} />} />
+              {renderCustomColumns('offlineSales')}
+              <Table.Column {...actionColumn('offlineSales')} />
             </Table>
           </Tabs.TabPane>
 
-          {/* 11_GMV_Channel */}
-          <Tabs.TabPane tab="11_GMV_Channel" key="10">
-             <Table dataSource={localData.gmvChannel?.map((r, i) => ({ ...r, key: i })) || []} pagination={false} size="small" bordered scroll={{ x: 'max-content' }}
-              footer={() => <Button type="dashed" onClick={() => addRow('gmvChannel', { date: dayjs().format('DD-MM-YYYY'), dayOfWeek: dayjs().format('dddd'), online: 0, offline: 0, o2o: 0 })} block icon={<PlusOutlined />}>Thêm Ngày / Add Date</Button>}>
+          {/* 11_SKU_Sampling */}
+          <Tabs.TabPane tab="11_SKU_Sampling" key="10">
+             <Table dataSource={localData.skuSampling?.map((r, i) => ({ ...r, key: i })) || []} pagination={false} size="small" bordered scroll={{ x: 'max-content' }}
+              footer={() => <Button type="dashed" onClick={() => addRow('skuSampling', { date: selectedDate, sku: 'Mã SKU', qtySold: 0, samples: 0 })} block icon={<PlusOutlined />}>Thêm dòng / Add Row</Button>}>
               <Table.Column 
                 title={getColTitle('Ngày', 'Date')} 
                 dataIndex="date" 
                 width={150} 
                 render={(v, _, i) => (
                   <DatePicker 
-                    value={v ? dayjs(v, 'DD-MM-YYYY') : null} 
-                    format="DD-MM-YYYY" 
-                    onChange={(date, dateStr) => { 
-                      handleArrayChange('gmvChannel', i, 'date', dateStr);
-                      const daysMap = { 'Monday': 'Thứ 2', 'Tuesday': 'Thứ 3', 'Wednesday': 'Thứ 4', 'Thursday': 'Thứ 5', 'Friday': 'Thứ 6', 'Saturday': 'Thứ 7', 'Sunday': 'Chủ Nhật' };
-                      const engDay = date ? date.format('dddd') : '';
-                      handleArrayChange('gmvChannel', i, 'dayOfWeek', daysMap[engDay] || engDay);
-                    }} 
+                    value={v ? dayjs(v, 'YYYY-MM-DD') : dayjs(selectedDate, 'YYYY-MM-DD')} 
+                    format="YYYY-MM-DD" 
+                    onChange={(date, dateStr) => handleArrayChange('skuSampling', i, 'date', dateStr || selectedDate)} 
                     style={{width: '100%'}} 
                   />
                 )} 
               />
-              <Table.Column title={getColTitle('Thứ', 'Day')} dataIndex="dayOfWeek" width={90} render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('gmvChannel', i, 'dayOfWeek', e.target.value)} />} />
-              <Table.Column title={getColTitle('Online (tr)', 'Online (m)')} dataIndex="online" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} style={{width: '100%'}} onChange={e => handleArrayChange('gmvChannel', i, 'online', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
-              <Table.Column title={getColTitle('Offline (tr)', 'Offline (m)')} dataIndex="offline" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} style={{width: '100%'}} onChange={e => handleArrayChange('gmvChannel', i, 'offline', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
-              <Table.Column title={getColTitle('O2O (tr)', 'O2O (m)')} dataIndex="o2o" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} style={{width: '100%'}} onChange={e => handleArrayChange('gmvChannel', i, 'o2o', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
-              <Table.Column title={getColTitle('Tổng (tr)', 'Total (m)')} render={(_, r) => <Text strong>{(r.online || 0) + (r.offline || 0) + (r.o2o || 0)}</Text>} />
-              <Table.Column {...actionColumn('gmvChannel')} />
+              <Table.Column title={getColTitle('Mã SKU', 'SKU')} dataIndex="sku" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('skuSampling', i, 'sku', e.target.value)} />} />
+              <Table.Column title={getColTitle('SL bán được', 'Qty Sold')} dataIndex="qtySold" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('skuSampling', i, 'qtySold', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
+              <Table.Column title={getColTitle('Sample phát đi', 'Samples Distributed')} dataIndex="samples" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('skuSampling', i, 'samples', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
+              <Table.Column title={getColTitle('Tổng cộng', 'Total')} render={(_, r, i) => {
+                const total = (r.qtySold || 0) + (r.samples || 0);
+                const displayVal = r.override_total !== undefined ? r.override_total : total;
+                return <Input value={displayVal} onChange={e => handleArrayChange('skuSampling', i, 'override_total', e.target.value)} style={{ fontWeight: 'bold' }} />;
+              }} />
+              {renderCustomColumns('skuSampling')}
+              <Table.Column {...actionColumn('skuSampling')} />
             </Table>
           </Tabs.TabPane>
 
@@ -457,6 +509,7 @@ const ExcelEditor = () => {
                 </span>;
               }} />
               <Table.Column title={getColTitle('Ghi chú', 'Note')} dataIndex="note" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('csResponse', i, 'note', e.target.value)} />} />
+              {renderCustomColumns('csResponse')}
               <Table.Column {...actionColumn('csResponse')} />
             </Table>
           </Tabs.TabPane>
@@ -487,6 +540,7 @@ const ExcelEditor = () => {
               <Table.Column title={getColTitle('Người xử lý', 'Handler')} dataIndex="handler" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} style={{ color: '#1890ff' }} onChange={e => handleArrayChange('alertsLog', i, 'handler', e.target.value)} />} />
               <Table.Column title={getColTitle('Hành động', 'Action')} dataIndex="action" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} style={{ color: '#1890ff' }} onChange={e => handleArrayChange('alertsLog', i, 'action', e.target.value)} />} />
               <Table.Column title={getColTitle('Trạng thái', 'Status')} dataIndex="status" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} style={{ color: '#1890ff' }} onChange={e => handleArrayChange('alertsLog', i, 'status', e.target.value)} />} />
+              {renderCustomColumns('alertsLog')}
               <Table.Column {...actionColumn('alertsLog')} />
             </Table>
           </Tabs.TabPane>

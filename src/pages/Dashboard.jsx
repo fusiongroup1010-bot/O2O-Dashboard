@@ -3,10 +3,11 @@ import { Row, Col, Modal } from 'antd';
 import ZoneOnline from '../components/ZoneOnline';
 import ZoneLogistics from '../components/ZoneLogistics';
 import ZoneOffline from '../components/ZoneOffline';
+import CustomCharts from '../components/CustomCharts';
 import { useDashboard } from '../context/DataContext';
 
 const Dashboard = () => {
-  const { dashboardData } = useDashboard();
+  const { dashboardData, updateAllData, allData, selectedDate } = useDashboard();
   const [modalVisible, setModalVisible] = useState(false);
   const [modalContent, setModalContent] = useState(null);
   const [modalTitle, setModalTitle] = useState('');
@@ -47,6 +48,13 @@ const Dashboard = () => {
           <ZoneOffline data={dashboardData} onEnlarge={openModal} />
         </Col>
       </Row>
+
+      <CustomCharts 
+        dashboardData={dashboardData} 
+        updateAllData={updateAllData} 
+        allData={allData} 
+        selectedDate={selectedDate} 
+      />
 
       <Modal
         title={modalTitle}

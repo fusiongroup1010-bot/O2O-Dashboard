@@ -53,8 +53,12 @@ export const DataProvider = ({ children }) => {
       orderStatus: [{ status: 'Thành công', value: 0 }, { status: 'Hoàn/Huỷ', value: 0 }],
       offlineTraffic: [],
       qrFunnel: [],
+      offlineSales: [],
+      skuSampling: [],
       gmvChannel: [],
-      alertsLog: []
+      alertsLog: [],
+      customColumns: {},
+      customCharts: []
     };
   }, [allData, selectedDate]);
 
