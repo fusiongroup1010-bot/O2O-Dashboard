@@ -214,7 +214,7 @@ const ExcelEditor = () => {
           {/* 05_Ads_Conversion */}
           <Tabs.TabPane tab="05_Ads_Conversion" key="4">
             <Table dataSource={localData.adsConversion?.map((r, i) => ({ ...r, key: i })) || []} pagination={false} size="small" bordered scroll={{ x: 'max-content' }}
-              footer={() => <Button type="dashed" onClick={() => addRow('adsConversion', { date: selectedDate, time: '00:00', spend: 0, clicks: 0, orders: 0 })} block icon={<PlusOutlined />}>Thêm Giờ / Add Time</Button>}>
+              footer={() => <Button type="dashed" onClick={() => addRow('adsConversion', { date: selectedDate, time: '00:00', clicks: 0, orders: 0 })} block icon={<PlusOutlined />}>Thêm Giờ / Add Time</Button>}>
               <Table.Column 
                 title={getColTitle('Ngày', 'Date')} 
                 dataIndex="date" 
@@ -229,7 +229,7 @@ const ExcelEditor = () => {
                 )} 
               />
               <Table.Column title={getColTitle('Giờ', 'Time')} dataIndex="time" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('adsConversion', i, 'time', e.target.value)} />} />
-              <Table.Column title={getColTitle('Chi phí Ads ($)', 'Ads Spend ($)')} dataIndex="spend" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('adsConversion', i, 'spend', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
+
               <Table.Column title={getColTitle('Lượt click', 'Clicks')} dataIndex="clicks" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('adsConversion', i, 'clicks', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
               <Table.Column title={getColTitle('Đơn hàng', 'Orders')} dataIndex="orders" render={(v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange('adsConversion', i, 'orders', isNaN(e.target.value) ? 0 : Number(e.target.value))} />} />
               <Table.Column title={getColTitle('Conv. (%)', 'Conv. (%)')} render={(_, r) => {

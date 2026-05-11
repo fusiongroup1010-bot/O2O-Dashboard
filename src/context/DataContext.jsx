@@ -1,22 +1,42 @@
-import React, { createContext, useState, useContext, useMemo } from 'react';
+import React, { createContext, useState, useContext, useMemo, useEffect } from 'react';
 import { mockData as initialData } from '../mockData';
 
 const DataContext = createContext();
+const STORAGE_KEY = 'O2O_DASHBOARD_DATA';
 
 export const DataProvider = ({ children }) => {
-  // Today's date as default key YYYY-MM-DD
   const today = new Date().toISOString().split('T')[0];
   
-  const [allData, setAllData] = useState({
-    [today]: initialData
+  // Initialize state from localStorage or default to initialData
+  const [allData, setAllData] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse saved data', e);
+      }
+    }
+    return { [today]: initialData };
   });
-  const [selectedDate, setSelectedDate] = useState(today);
+
+  // Default selectedDate to the latest date available in allData
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const dates = Object.keys(allData).sort();
+    return dates.length > 0 ? dates[dates.length - 1] : today;
+  });
+
+  // Persist allData to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(allData));
+  }, [allData]);
 
   const updateAllData = (newDataByDate) => {
     setAllData(newDataByDate);
-    // Auto-select the latest date if current selected date is not in new data
-    const dates = Object.keys(newDataByDate);
-    if (dates.length > 0 && !newDataByDate[selectedDate]) {
+    
+    // Auto-select the latest date if it's a new import
+    const dates = Object.keys(newDataByDate).sort();
+    if (dates.length > 0) {
       setSelectedDate(dates[dates.length - 1]);
     }
   };

@@ -11,13 +11,13 @@ export const mockData = {
     { time: '14:00', channel: 'Shopee', rev: 410, spend: 80 }
   ],
   adsConversion: [
-    { time: '08:00', spend: 50, clicks: 1200, orders: 15 },
-    { time: '10:00', spend: 120, clicks: 2500, orders: 28 },
-    { time: '12:00', spend: 450, clicks: 5800, orders: 70 },
-    { time: '14:00', spend: 510, clicks: 6200, orders: 95 },
-    { time: '16:00', spend: 430, clicks: 5200, orders: 110 },
-    { time: '18:00', spend: 380, clicks: 4900, orders: 135 },
-    { time: '20:00', spend: 590, clicks: 7000, orders: 220 }
+    { time: '08:00', clicks: 1200, orders: 15 },
+    { time: '10:00', clicks: 2500, orders: 28 },
+    { time: '12:00', clicks: 5800, orders: 70 },
+    { time: '14:00', clicks: 6200, orders: 95 },
+    { time: '16:00', clicks: 5200, orders: 110 },
+    { time: '18:00', clicks: 4900, orders: 135 },
+    { time: '20:00', clicks: 7000, orders: 220 }
   ],
   inventorySku: [
     { sku: 'SKU-01', name: 'Hạt khô Adult 1kg', ads: 750, inventory: 800, salesPerDay: 60 },

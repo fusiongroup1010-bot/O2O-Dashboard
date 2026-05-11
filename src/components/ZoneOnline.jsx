@@ -76,7 +76,6 @@ const ZoneOnline = ({ data, onEnlarge }) => {
   // 3. Ads vs Conversion
   const adsChartData = (data?.adsConversion || []).map(item => ({
     time: item.time,
-    spend: item.spend,
     conversion: item.clicks > 0 ? Number(((item.orders / item.clicks) * 100).toFixed(2)) : 0
   }));
 
@@ -85,12 +84,10 @@ const ZoneOnline = ({ data, onEnlarge }) => {
       <LineChart data={adsChartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" vertical={false} />
         <XAxis dataKey="time" fontSize={11} />
-        <YAxis yAxisId="left" fontSize={11} tickFormatter={(v) => `$${v}`} />
-        <YAxis yAxisId="right" orientation="right" fontSize={11} tickFormatter={(v) => `${v}%`} />
+        <YAxis orientation="left" fontSize={11} tickFormatter={(v) => `${v}%`} />
         <RechartsTooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
         <Legend iconType="circle" wrapperStyle={{ fontSize: 11, bottom: -10 }} />
-        <Line yAxisId="left" type="monotone" dataKey="spend" name="Ads ($)" stroke="#fa8c16" strokeWidth={3} dot={{ r: 4 }} />
-        <Line yAxisId="right" type="monotone" dataKey="conversion" name="Conv. (%)" stroke="#1890ff" strokeWidth={3} dot={{ r: 4 }} />
+        <Line type="monotone" dataKey="conversion" name="Conv. (%)" stroke="#1890ff" strokeWidth={3} dot={{ r: 4 }} />
       </LineChart>
     </ResponsiveContainer>
   );
@@ -117,7 +114,7 @@ const ZoneOnline = ({ data, onEnlarge }) => {
         </Card>
       </Col>
       <Col span={24}>
-        <Card title={getTitle('[3] Chi phí Ads & Chuyển đổi', 'Ads Spend vs Conversion')} size="small" bordered={false} hoverable onClick={() => onEnlarge(getTitle('[3] Chi phí Ads & Chuyển đổi', 'Ads Spend vs Conversion'), <div style={{height: 400}}>{adsChart}</div>)} bodyStyle={cardBodyStyle}>
+        <Card title={getTitle('[3] Tỷ lệ Chuyển đổi (Conv. %)', 'Conversion Rate')} size="small" bordered={false} hoverable onClick={() => onEnlarge(getTitle('[3] Tỷ lệ Chuyển đổi (Conv. %)', 'Conversion Rate'), <div style={{height: 400}}>{adsChart}</div>)} bodyStyle={cardBodyStyle}>
           {adsChart}
         </Card>
       </Col>
