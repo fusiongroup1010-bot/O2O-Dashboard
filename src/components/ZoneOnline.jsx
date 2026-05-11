@@ -38,9 +38,9 @@ const ZoneOnline = ({ data, onEnlarge, customCharts = [], onDeleteChart }) => {
 
   // 2. ROAS Gauge Chart
   const roasData = data?.onlineRoas || [];
-  const totalRev = roasData.reduce((acc, curr) => acc + (curr.rev || 0), 0);
-  const totalSpend = roasData.reduce((acc, curr) => acc + (curr.spend || 0), 0);
-  const roas = totalSpend > 0 ? Number((totalRev / totalSpend).toFixed(2)) : 0;
+  const roas = roasData.length > 0 
+    ? Number((roasData.reduce((acc, curr) => acc + (curr.roas || 0), 0) / roasData.length).toFixed(2)) 
+    : 0;
   const targetRoas = data?.cauHinh?.roasMin || 5.5;
 
   const gaugeOption = {

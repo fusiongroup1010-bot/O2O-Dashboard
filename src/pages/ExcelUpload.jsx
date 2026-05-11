@@ -110,12 +110,12 @@ const ExcelEditor = () => {
 
   const getMenu = (sheetKey, colKey, prevColKey, isCustom) => ({
     items: [
-      { key: 'insert_left', label: 'Chèn cột bên trái' },
-      { key: 'insert_right', label: 'Chèn cột bên phải' },
-      ...(isCustom ? [{ type: 'divider' }, { key: 'delete', label: 'Xóa cột này', danger: true }] : [])
+      { key: 'insert_left', label: 'Chèn cột bên trái / Insert Left' },
+      { key: 'insert_right', label: 'Chèn cột bên phải / Insert Right' },
+      ...(isCustom ? [{ type: 'divider' }, { key: 'delete', label: 'Xóa cột này / Delete Column', danger: true }] : [])
     ],
     onClick: (e) => {
-      if (e.key === 'insert_left') handleInsertColumn(sheetKey, prevColKey === 'START' ? 'START' : prevColKey, prevColKey === 'START' ? 'right' : 'right');
+      if (e.key === 'insert_left') handleInsertColumn(sheetKey, prevColKey, 'left');
       else if (e.key === 'insert_right') handleInsertColumn(sheetKey, colKey, 'right');
       else if (e.key === 'delete') handleDeleteColumn(sheetKey, colKey);
     }
@@ -192,10 +192,10 @@ const ExcelEditor = () => {
         tInp(sheetKey, 'note', 'Ghi chú', 'Note')
       ];
       case 'onlineRoas': return [
-        tDate(sheetKey), tInp(sheetKey, 'time', 'Giờ', 'Time'), tInp(sheetKey, 'channel', 'Kênh', 'Channel'), tNum(sheetKey, 'rev', 'Doanh thu Ads', 'Ads Revenue'), tNum(sheetKey, 'spend', 'Chi phí Ads', 'Ads Spend'),
-        t('override_roas', 'ROAS', 'ROAS', (_, r, i) => <Input value={r.override_roas !== undefined ? r.override_roas : ((r.spend || 0) > 0 ? ((r.rev || 0) / r.spend) : 0).toFixed(2)} onChange={e => handleArrayChange(sheetKey, i, 'override_roas', e.target.value)} style={{ width: 80, fontWeight: 'bold' }} />),
+        tDate(sheetKey), tInp(sheetKey, 'time', 'Giờ', 'Time'), tInp(sheetKey, 'channel', 'Kênh', 'Channel'),
+        tNum(sheetKey, 'roas', 'ROAS', 'ROAS'),
         t('status', 'Trạng thái', 'Status', (_, r) => {
-          const roas = (r.spend || 0) > 0 ? ((r.rev || 0) / r.spend) : 0;
+          const roas = r.roas || 0;
           const isCritical = roas < (localData.cauHinh?.roasMin || 5.5);
           return <span style={{ padding: '2px 8px', borderRadius: 4, background: isCritical ? '#f5222d' : '#52c41a', color: 'white', fontWeight: 'bold' }}>{isCritical ? 'CRITICAL' : 'NORMAL'}</span>;
         })
@@ -260,7 +260,7 @@ const ExcelEditor = () => {
 
   const TAB_MAP = [
     { key: 'onlineGmv', name: '03_Online_GMV', titleVi: 'GMV Thực tế vs Mục tiêu', titleEn: 'Actual vs Target GMV', addText: 'Thêm Kênh / Add Channel', defaultRow: { date: selectedDate, channel: 'Mới', target: 0, actual: 0, note: '' } },
-    { key: 'onlineRoas', name: '04_Online_ROAS', titleVi: 'Hiệu quả ROAS', titleEn: 'ROAS Performance', addText: 'Thêm Giờ / Add Time', defaultRow: { date: selectedDate, time: '00:00', channel: 'Shopee', rev: 0, spend: 0 } },
+    { key: 'onlineRoas', name: '04_Online_ROAS', titleVi: 'Hiệu quả ROAS', titleEn: 'ROAS Performance', addText: 'Thêm Giờ / Add Time', defaultRow: { date: selectedDate, time: '00:00', channel: 'Shopee', roas: 0 } },
     { key: 'adsConversion', name: '05_Ads_Conversion', titleVi: 'Chuyển đổi Ads', titleEn: 'Ads Conversion', addText: 'Thêm Giờ / Add Time', defaultRow: { date: selectedDate, time: '00:00', clicks: 0, orders: 0 } },
     { key: 'inventorySku', name: '06_Inventory_SKU', titleVi: 'Tồn kho theo SKU', titleEn: 'SKU Inventory', addText: 'Thêm SKU / Add SKU', defaultRow: { date: selectedDate, sku: 'Mới', name: '', inventory: 0, salesPerDay: 1 } },
     { key: 'stockSafety', name: '07_Stock_Safety', titleVi: 'Cảnh báo tồn kho an toàn', titleEn: 'Safety Stock Alert', addText: 'Thêm dòng / Add Row', defaultRow: { date: selectedDate, current: 0, safety: 0, note: '' } },
@@ -299,10 +299,9 @@ const ExcelEditor = () => {
                 { stt: 4, kpi: 'Số ngày tồn kho an toàn\nSafety Stock Days', unit: 'ngày', keyName: 'safetyStockDays', rule: 'Stock < ngưỡng -> cảnh báo CRITICAL' },
                 { stt: 5, kpi: 'Tỷ lệ huỷ đơn tối đa\nMax Cancel Rate', unit: '%', keyName: 'cancelMax', rule: 'Cancel rate > ngưỡng -> WARNING' },
                 { stt: 6, kpi: 'QR Conversion tối thiểu\nMin QR Conv.', unit: '%', keyName: 'qrConvMin', rule: 'Conversion < ngưỡng -> WARNING' },
-                { stt: 7, kpi: 'Ads Spend trần / ngày\nMax Daily Ads Spend', unit: 'VNĐ (triệu)', keyName: 'adsMax', rule: 'Ads vượt trần -> WARNING' },
-                { stt: 8, kpi: 'Tồn kho an toàn\nSafety Stock (units)', unit: 'đơn vị', keyName: 'safetyStockVal', rule: 'Mốc tham chiếu cho Bar Chart Zone B-2' },
-                { stt: 9, kpi: 'Rating CS tối thiểu\nMin CS Rating', unit: '/5', keyName: 'csRatingMin', rule: 'Trung bình rating dưới ngưỡng -> WARNING' },
-                { stt: 10, kpi: 'Số đơn hoàn tối đa / ngày\nMax Daily Returns', unit: 'đơn', keyName: 'returnMax', rule: 'Trigger điều tra chất lượng' }
+                { stt: 7, kpi: 'Tồn kho an toàn\nSafety Stock (units)', unit: 'đơn vị', keyName: 'safetyStockVal', rule: 'Mốc tham chiếu cho Bar Chart Zone B-2' },
+                { stt: 8, kpi: 'Rating CS tối thiểu\nMin CS Rating', unit: '/5', keyName: 'csRatingMin', rule: 'Trung bình rating dưới ngưỡng -> WARNING' },
+                { stt: 9, kpi: 'Số đơn hoàn tối đa / ngày\nMax Daily Returns', unit: 'đơn', keyName: 'returnMax', rule: 'Trigger điều tra chất lượng' }
               ]} 
               pagination={false} size="small" bordered scroll={{ x: 'max-content' }}
             >
