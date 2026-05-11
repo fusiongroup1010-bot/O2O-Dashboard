@@ -3,7 +3,7 @@ import { Row, Col, Modal } from 'antd';
 import ZoneOnline from '../components/ZoneOnline';
 import ZoneLogistics from '../components/ZoneLogistics';
 import ZoneOffline from '../components/ZoneOffline';
-import CustomCharts from '../components/CustomCharts';
+import CustomChartModal from '../components/CustomChartModal';
 import { useDashboard } from '../context/DataContext';
 
 const Dashboard = () => {
@@ -11,6 +11,22 @@ const Dashboard = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalContent, setModalContent] = useState(null);
   const [modalTitle, setModalTitle] = useState('');
+  const [chartModalOpen, setChartModalOpen] = useState(false);
+  const [targetZone, setTargetZone] = useState('');
+
+  const openChartModal = (zone) => {
+    setTargetZone(zone);
+    setChartModalOpen(true);
+  };
+
+  const handleDeleteChart = (id) => {
+    const updatedCharts = (dashboardData?.customCharts || []).filter(c => c.id !== id);
+    const newDataByDate = { 
+      ...allData, 
+      [selectedDate]: { ...dashboardData, customCharts: updatedCharts } 
+    };
+    updateAllData(newDataByDate);
+  };
 
   const openModal = (title, content) => {
     setModalTitle(title);
@@ -23,37 +39,45 @@ const Dashboard = () => {
       <Row gutter={[16, 16]} style={{ flex: 1 }}>
         {/* Cột 1: Zone A */}
         <Col xs={24} lg={8}>
-          <div className="section-title">
-            ZONE A: HIỆU QUẢ TRỰC TUYẾN<br/>
-            <small style={{ fontWeight: 'normal', color: '#888', fontSize: 12 }}>ONLINE PERFORMANCE</small>
+          <div className="section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              ZONE A: HIỆU QUẢ TRỰC TUYẾN<br/>
+              <small style={{ fontWeight: 'normal', color: '#888', fontSize: 12 }}>ONLINE PERFORMANCE</small>
+            </div>
+            <Button size="small" type="dashed" onClick={() => openChartModal('A')}>+ Biểu Đồ</Button>
           </div>
-          <ZoneOnline data={dashboardData} onEnlarge={openModal} />
+          <ZoneOnline data={dashboardData} onEnlarge={openModal} customCharts={(dashboardData?.customCharts || []).filter(c => c.zone === 'A')} onDeleteChart={handleDeleteChart} />
         </Col>
 
         {/* Cột 2: Zone B */}
         <Col xs={24} lg={8}>
-          <div className="section-title">
-            ZONE B: VẬN HÀNH & TỒN KHO<br/>
-            <small style={{ fontWeight: 'normal', color: '#888', fontSize: 12 }}>LOGISTICS & INVENTORY</small>
+          <div className="section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              ZONE B: VẬN HÀNH & TỒN KHO<br/>
+              <small style={{ fontWeight: 'normal', color: '#888', fontSize: 12 }}>LOGISTICS & INVENTORY</small>
+            </div>
+            <Button size="small" type="dashed" onClick={() => openChartModal('B')}>+ Biểu Đồ</Button>
           </div>
-          <ZoneLogistics data={dashboardData} onEnlarge={openModal} />
+          <ZoneLogistics data={dashboardData} onEnlarge={openModal} customCharts={(dashboardData?.customCharts || []).filter(c => c.zone === 'B')} onDeleteChart={handleDeleteChart} />
         </Col>
 
         {/* Cột 3: Zone C */}
         <Col xs={24} lg={8}>
-          <div className="section-title">
-            ZONE C: NGOẠI TUYẾN & O2O<br/>
-            <small style={{ fontWeight: 'normal', color: '#888', fontSize: 12 }}>OFFLINE & O2O</small>
+          <div className="section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              ZONE C: NGOẠI TUYẾN & O2O<br/>
+              <small style={{ fontWeight: 'normal', color: '#888', fontSize: 12 }}>OFFLINE & O2O</small>
+            </div>
+            <Button size="small" type="dashed" onClick={() => openChartModal('C')}>+ Biểu Đồ</Button>
           </div>
-          <ZoneOffline data={dashboardData} onEnlarge={openModal} />
+          <ZoneOffline data={dashboardData} onEnlarge={openModal} customCharts={(dashboardData?.customCharts || []).filter(c => c.zone === 'C')} onDeleteChart={handleDeleteChart} />
         </Col>
       </Row>
 
-      <CustomCharts 
-        dashboardData={dashboardData} 
-        updateAllData={updateAllData} 
-        allData={allData} 
-        selectedDate={selectedDate} 
+      <CustomChartModal 
+        open={chartModalOpen} 
+        onCancel={() => setChartModalOpen(false)} 
+        targetZone={targetZone} 
       />
 
       <Modal
