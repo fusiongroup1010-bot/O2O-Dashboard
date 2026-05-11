@@ -145,7 +145,9 @@ const ExcelEditor = () => {
   );
 
   const buildColumns = (sheetKey, staticCols) => {
-    let rawCustomCols = localData.customColumns?.[sheetKey] || [];
+    let rawCustomCols = localData.customColumns && Array.isArray(localData.customColumns[sheetKey]) 
+      ? localData.customColumns[sheetKey] 
+      : [];
     // Sanitize: filter out any old string values from previous data format
     const customCols = rawCustomCols.filter(c => typeof c === 'object' && c !== null && c.id);
     
@@ -209,7 +211,10 @@ const ExcelEditor = () => {
         tDate(sheetKey), tInp(sheetKey, 'time', 'Giờ', 'Time'), tInp(sheetKey, 'channel', 'Kênh', 'Channel'),
         tNum(sheetKey, 'roas', 'ROAS', 'ROAS'),
         t('status', 'Trạng thái', 'Status', (_, r) => {
-          const roas = r.roas || 0;
+          const roasData = localData.onlineRoas || [];
+          const roas = roasData.length > 0 
+            ? Number((roasData.reduce((acc, curr) => acc + Number(curr.roas || 0), 0) / roasData.length).toFixed(2)) 
+            : 0;
           const isCritical = roas < (localData.cauHinh?.roasMin || 5.5);
           return <span style={{ padding: '2px 8px', borderRadius: 4, background: isCritical ? '#f5222d' : '#52c41a', color: 'white', fontWeight: 'bold' }}>{isCritical ? 'CRITICAL' : 'NORMAL'}</span>;
         })
@@ -323,7 +328,7 @@ const ExcelEditor = () => {
               <Table.Column title={<div style={{lineHeight: 1.2}}><div>Chỉ tiêu (KPI)</div><div style={{fontSize: 10, color:'#888'}}>Indicator</div></div>} dataIndex="kpi" render={(v) => <div style={{whiteSpace: 'pre-line'}}>{v}</div>} />
               <Table.Column title={<div style={{lineHeight: 1.2}}><div>Đơn vị</div><div style={{fontSize: 10, color:'#888'}}>Unit</div></div>} dataIndex="unit" width={100} />
               <Table.Column title={<div style={{lineHeight: 1.2}}><div>Giá trị mục tiêu</div><div style={{fontSize: 10, color:'#888'}}>Target Value</div></div>} render={(_, r) => (
-                <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={localData.cauHinh?.[r.keyName]} onChange={e => handleConfigChange(r.keyName, isNaN(e.target.value) ? 0 : Number(e.target.value))} style={{ width: '100%', color: '#1890ff', fontWeight: 'bold' }} />
+                <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={localData.cauHinh?.[r.keyName]} onChange={e => handleConfigChange(r.keyName, e.target.value)} style={{ width: '100%', color: '#1890ff', fontWeight: 'bold' }} />
               )} width={150} />
               <Table.Column title={<div style={{lineHeight: 1.2}}><div>Diễn giải / Quy tắc</div><div style={{fontSize: 10, color:'#888'}}>Explanation / Rule</div></div>} dataIndex="rule" />
             </Table>

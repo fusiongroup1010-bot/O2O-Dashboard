@@ -11,8 +11,8 @@ import CustomChartRenderer from './CustomChartRenderer';
 const ZoneOnline = ({ data, onEnlarge, customCharts = [], onDeleteChart }) => {
   // 1. GMV Bullet Chart
   const gmvData = data?.onlineGmv || [];
-  const target = gmvData.reduce((acc, curr) => acc + (curr.target || 0), 0) || data?.cauHinh?.gmvTarget || 1;
-  const actual = gmvData.reduce((acc, curr) => acc + (curr.actual || 0), 0);
+  const target = gmvData.reduce((acc, curr) => acc + Number(curr.target || 0), 0) || data?.cauHinh?.gmvTarget || 1;
+  const actual = gmvData.reduce((acc, curr) => acc + Number(curr.actual || 0), 0);
   const gmvPercent = (actual / target) * 100;
 
   const bulletOption = {
@@ -41,7 +41,7 @@ const ZoneOnline = ({ data, onEnlarge, customCharts = [], onDeleteChart }) => {
   // 2. ROAS Gauge Chart
   const roasData = data?.onlineRoas || [];
   const roas = roasData.length > 0 
-    ? Number((roasData.reduce((acc, curr) => acc + (curr.roas || 0), 0) / roasData.length).toFixed(2)) 
+    ? Number((roasData.reduce((acc, curr) => acc + Number(curr.roas || 0), 0) / roasData.length).toFixed(2)) 
     : 0;
   const targetRoas = data?.cauHinh?.roasMin || 5.5;
 
