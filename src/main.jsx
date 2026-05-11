@@ -6,7 +6,7 @@ import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename="/O2O-Dashboard/">
       <App />
     </BrowserRouter>
   </React.StrictMode>,

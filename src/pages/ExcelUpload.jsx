@@ -131,7 +131,10 @@ const ExcelEditor = () => {
   );
 
   const buildColumns = (sheetKey, staticCols) => {
-    const customCols = localData.customColumns?.[sheetKey] || [];
+    let rawCustomCols = localData.customColumns?.[sheetKey] || [];
+    // Sanitize: filter out any old string values from previous data format
+    const customCols = rawCustomCols.filter(c => typeof c === 'object' && c !== null && c.id);
+    
     let result = [];
     
     const addCustomsAfter = (key) => {

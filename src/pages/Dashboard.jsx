@@ -20,12 +20,19 @@ const Dashboard = () => {
   };
 
   const handleDeleteChart = (id) => {
-    const updatedCharts = (dashboardData?.customCharts || []).filter(c => c.id !== id);
+    const currentCharts = Array.isArray(dashboardData?.customCharts) ? dashboardData.customCharts : [];
+    const updatedCharts = currentCharts.filter(c => c.id !== id);
     const newDataByDate = { 
       ...allData, 
       [selectedDate]: { ...dashboardData, customCharts: updatedCharts } 
     };
     updateAllData(newDataByDate);
+  };
+
+  const getCustomCharts = (zone) => {
+    return Array.isArray(dashboardData?.customCharts) 
+      ? dashboardData.customCharts.filter(c => c.zone === zone) 
+      : [];
   };
 
   const openModal = (title, content) => {
@@ -46,7 +53,7 @@ const Dashboard = () => {
             </div>
             <Button size="small" type="dashed" onClick={() => openChartModal('A')}>+ Biểu Đồ</Button>
           </div>
-          <ZoneOnline data={dashboardData} onEnlarge={openModal} customCharts={(dashboardData?.customCharts || []).filter(c => c.zone === 'A')} onDeleteChart={handleDeleteChart} />
+          <ZoneOnline data={dashboardData} onEnlarge={openModal} customCharts={getCustomCharts('A')} onDeleteChart={handleDeleteChart} />
         </Col>
 
         {/* Cột 2: Zone B */}
@@ -58,7 +65,7 @@ const Dashboard = () => {
             </div>
             <Button size="small" type="dashed" onClick={() => openChartModal('B')}>+ Biểu Đồ</Button>
           </div>
-          <ZoneLogistics data={dashboardData} onEnlarge={openModal} customCharts={(dashboardData?.customCharts || []).filter(c => c.zone === 'B')} onDeleteChart={handleDeleteChart} />
+          <ZoneLogistics data={dashboardData} onEnlarge={openModal} customCharts={getCustomCharts('B')} onDeleteChart={handleDeleteChart} />
         </Col>
 
         {/* Cột 3: Zone C */}
@@ -70,7 +77,7 @@ const Dashboard = () => {
             </div>
             <Button size="small" type="dashed" onClick={() => openChartModal('C')}>+ Biểu Đồ</Button>
           </div>
-          <ZoneOffline data={dashboardData} onEnlarge={openModal} customCharts={(dashboardData?.customCharts || []).filter(c => c.zone === 'C')} onDeleteChart={handleDeleteChart} />
+          <ZoneOffline data={dashboardData} onEnlarge={openModal} customCharts={getCustomCharts('C')} onDeleteChart={handleDeleteChart} />
         </Col>
       </Row>
 
