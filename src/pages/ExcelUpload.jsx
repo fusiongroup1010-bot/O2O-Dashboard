@@ -222,11 +222,8 @@ const ExcelEditor = () => {
         tDate(sheetKey), tInp(sheetKey, 'time', 'Giờ', 'Time'), tInp(sheetKey, 'channel', 'Kênh', 'Channel'),
         tNum(sheetKey, 'roas', 'ROAS', 'ROAS'),
         t('status', 'Trạng thái', 'Status', (_, r) => {
-          const roasData = localData.onlineRoas || [];
-          const roas = roasData.length > 0 
-            ? Number((roasData.reduce((acc, curr) => acc + Number(curr.roas || 0), 0) / roasData.length).toFixed(2)) 
-            : 0;
-          const isCritical = roas < (localData.cauHinh?.roasMin || 5.5);
+          const rowRoas = Number(r.roas || 0);
+          const isCritical = rowRoas < (localData.cauHinh?.roasMin || 5.5);
           return <span style={{ padding: '2px 8px', borderRadius: 4, background: isCritical ? '#f5222d' : '#52c41a', color: 'white', fontWeight: 'bold' }}>{isCritical ? 'CRITICAL' : 'NORMAL'}</span>;
         })
       ];
