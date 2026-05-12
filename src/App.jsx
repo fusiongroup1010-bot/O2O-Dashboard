@@ -57,12 +57,8 @@ const AppContent = () => {
     }
   });
 
-  const manualCriticalAlerts = (dashboardData.alertsLog || [])
-    .filter(a => a.type?.toUpperCase() === 'CRITICAL')
-    .map(a => ({ ...a, message: a.message }));
-
-  const allCriticalAlerts = [...manualCriticalAlerts, ...autoCriticalAlerts];
-  const marqueeText = allCriticalAlerts.map(a => a.message).join('  |  ');
+  // Chỉ dùng auto-generated alerts từ dữ liệu thực tế, không gộp alerts nhập tay từ alertsLog
+  const marqueeText = autoCriticalAlerts.map(a => a.message).join('  |  ');
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
