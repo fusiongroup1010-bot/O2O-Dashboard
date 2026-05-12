@@ -35,21 +35,31 @@ const AppContent = () => {
   const roasMin = dashboardData.cauHinh?.roasMin || 5.5;
   const stockDays = dashboardData.cauHinh?.safetyStockDays || 3;
 
-  const autoCriticalAlerts = (dashboardData.csResponse || [])
-    .filter(r => (r.responseTime || 0) > csMax)
-    .map(r => ({ message: `CS Response ${r.responseTime} phút (> ${csMax})` }));
+  const autoCriticalAlerts = [];
 
-  const manualCriticalAlerts = (dashboardData.alertsLog || []).filter(a => a.type?.toUpperCase() === 'CRITICAL').map(a => {
-    let msg = a.message;
-    // Tự động thay thế giá trị target trong nội dung cảnh báo thủ công bằng giá trị cấu hình thực tế
-    if (msg.includes('ROAS') && msg.includes('target')) {
-      msg = msg.replace(/target [\d.]+/, `target ${roasMin}`);
+  (dashboardData.csResponse || []).forEach(r => {
+    if ((r.responseTime || 0) > csMax) {
+      autoCriticalAlerts.push({ message: `CS Response ${r.responseTime} phút (> ${csMax})` });
     }
-    if (msg.includes('còn tồn') && msg.includes('ngày')) {
-      // Optional: Replace hardcoded days target if needed, but the user only explicitly asked for Target 5.5
-    }
-    return { ...a, message: msg };
   });
+
+  (dashboardData.onlineRoas || []).forEach(r => {
+    const roasVal = Number(r.roas || 0);
+    if (roasVal > 0 && roasVal < roasMin) {
+      autoCriticalAlerts.push({ message: `${r.channel || 'Kênh'} ROAS ${roasVal} (< target ${roasMin})` });
+    }
+  });
+
+  (dashboardData.inventorySku || []).forEach(r => {
+    const days = (r.salesPerDay || 0) > 0 ? ((r.inventory || 0) / r.salesPerDay) : 0;
+    if (days > 0 && days < stockDays) {
+      autoCriticalAlerts.push({ message: `${r.sku || 'SKU'} còn tồn ${days.toFixed(1)} ngày (< ${stockDays} ngày)` });
+    }
+  });
+
+  const manualCriticalAlerts = (dashboardData.alertsLog || [])
+    .filter(a => a.type?.toUpperCase() === 'CRITICAL')
+    .map(a => ({ ...a, message: a.message }));
 
   const allCriticalAlerts = [...manualCriticalAlerts, ...autoCriticalAlerts];
   const marqueeText = allCriticalAlerts.map(a => a.message).join('  |  ');
