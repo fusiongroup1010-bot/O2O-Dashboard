@@ -31,11 +31,26 @@ const AppContent = () => {
   const availableDates = Object.keys(allData).sort();
 
   // Lấy cảnh báo critical mới nhất để chạy trên Marquee
-  const autoCriticalAlerts = (dashboardData.csResponse || [])
-    .filter(r => (r.responseTime || 0) > (dashboardData.cauHinh?.csResponseMax || 5))
-    .map(r => ({ message: `CS Response ${r.responseTime} phút (> ${dashboardData.cauHinh?.csResponseMax || 5})` }));
+  const csMax = dashboardData.cauHinh?.csResponseMax || 5;
+  const roasMin = dashboardData.cauHinh?.roasMin || 5.5;
+  const stockDays = dashboardData.cauHinh?.safetyStockDays || 3;
 
-  const manualCriticalAlerts = (dashboardData.alertsLog || []).filter(a => a.type?.toUpperCase() === 'CRITICAL');
+  const autoCriticalAlerts = (dashboardData.csResponse || [])
+    .filter(r => (r.responseTime || 0) > csMax)
+    .map(r => ({ message: `CS Response ${r.responseTime} phút (> ${csMax})` }));
+
+  const manualCriticalAlerts = (dashboardData.alertsLog || []).filter(a => a.type?.toUpperCase() === 'CRITICAL').map(a => {
+    let msg = a.message;
+    // Tự động thay thế giá trị target trong nội dung cảnh báo thủ công bằng giá trị cấu hình thực tế
+    if (msg.includes('ROAS') && msg.includes('target')) {
+      msg = msg.replace(/target [\d.]+/, `target ${roasMin}`);
+    }
+    if (msg.includes('còn tồn') && msg.includes('ngày')) {
+      // Optional: Replace hardcoded days target if needed, but the user only explicitly asked for Target 5.5
+    }
+    return { ...a, message: msg };
+  });
+
   const allCriticalAlerts = [...manualCriticalAlerts, ...autoCriticalAlerts];
   const marqueeText = allCriticalAlerts.map(a => a.message).join('  |  ');
 

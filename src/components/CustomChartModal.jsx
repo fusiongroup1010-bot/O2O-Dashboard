@@ -1,19 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Modal, Form, Select, Input, Button } from 'antd';
 import { useDashboard } from '../context/DataContext';
-
-const TAB_MAP = [
-  { key: 'onlineGmv', name: '03_Online_GMV' },
-  { key: 'onlineRoas', name: '04_Online_ROAS' },
-  { key: 'adsConversion', name: '05_Ads_Conversion' },
-  { key: 'inventorySku', name: '06_Inventory_SKU' },
-  { key: 'stockSafety', name: '07_Stock_Safety' },
-  { key: 'orderStatus', name: '08_Order_Status' },
-  { key: 'offlineTraffic', name: '09_Offline_Traffic' },
-  { key: 'offlineSales', name: '10_Offline_Sales' },
-  { key: 'skuSampling', name: '11_SKU_Sampling' },
-  { key: 'csResponse', name: '12_CS_Response' },
-];
+import { TAB_MAP, SHEET_COLUMNS } from '../config/dashboardConfig';
 
 const CustomChartModal = ({ open, onCancel, targetZone }) => {
   const { dashboardData, updateAllData, allData, selectedDate } = useDashboard();
@@ -44,14 +32,30 @@ const CustomChartModal = ({ open, onCancel, targetZone }) => {
     onCancel();
   };
 
-  const getAvailableColumns = (sheetKey) => {
-    if (!sheetKey || !dashboardData[sheetKey] || dashboardData[sheetKey].length === 0) return [];
-    const firstRow = dashboardData[sheetKey][0];
-    return Object.keys(firstRow).filter(k => k !== 'key' && k !== 'action');
+  const selectedSheet = Form.useWatch('sheetKey', form);
+  const selectedType = Form.useWatch('type', form);
+  
+  // Use SHEET_COLUMNS config for the selected sheet, fallback to dynamic extraction if not found
+  const availableColumns = useMemo(() => {
+    if (!selectedSheet) return [];
+    if (SHEET_COLUMNS[selectedSheet]) {
+      return SHEET_COLUMNS[selectedSheet];
+    }
+    // Fallback for custom sheets if they exist
+    if (!dashboardData[selectedSheet] || dashboardData[selectedSheet].length === 0) return [];
+    const firstRow = dashboardData[selectedSheet][0];
+    return Object.keys(firstRow)
+      .filter(k => k !== 'key' && k !== 'action')
+      .map(k => ({ key: k, label: k }));
+  }, [selectedSheet, dashboardData]);
+
+  const handleTypeChange = () => {
+    // Reset X and Y axis when chart type changes to avoid type mismatches (string vs array)
+    form.resetFields(['xAxis', 'yAxis']);
   };
 
-  const selectedSheet = Form.useWatch('sheetKey', form);
-  const availableColumns = getAvailableColumns(selectedSheet);
+  const isMultipleY = ['bar', 'stacked_bar', 'line'].includes(selectedType);
+  const showXAxis = selectedType !== 'gauge';
 
   return (
     <Modal
@@ -75,25 +79,30 @@ const CustomChartModal = ({ open, onCancel, targetZone }) => {
           </Select>
         </Form.Item>
         <Form.Item name="type" label="Loại biểu đồ (Chart Type)" rules={[{ required: true }]} initialValue="bar">
-          <Select>
+          <Select onChange={handleTypeChange}>
             <Select.Option value="bar">Biểu đồ Cột (Bar Chart)</Select.Option>
+            <Select.Option value="stacked_bar">Biểu đồ Cột Chồng (Stacked Bar)</Select.Option>
             <Select.Option value="line">Biểu đồ Đường (Line Chart)</Select.Option>
             <Select.Option value="pie">Biểu đồ Tròn (Pie Chart)</Select.Option>
             <Select.Option value="gauge">Biểu đồ Thước đo (Gauge Chart)</Select.Option>
             <Select.Option value="bubble">Biểu đồ Bong bóng (Bubble Chart)</Select.Option>
           </Select>
         </Form.Item>
-        <Form.Item name="xAxis" label="Trục X (X-Axis)" rules={[{ required: true }]}>
-          <Select placeholder="Chọn Cột" disabled={!selectedSheet}>
-            {availableColumns.map(col => (
-              <Select.Option key={col} value={col}>{col}</Select.Option>
-            ))}
-          </Select>
-        </Form.Item>
+        
+        {showXAxis && (
+          <Form.Item name="xAxis" label="Trục X (X-Axis)" rules={[{ required: true }]}>
+            <Select placeholder="Chọn Cột" disabled={!selectedSheet}>
+              {availableColumns.map(col => (
+                <Select.Option key={col.key} value={col.key}>{col.label}</Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+        )}
+        
         <Form.Item name="yAxis" label="Trục Y (Y-Axis)" rules={[{ required: true }]}>
-          <Select placeholder="Chọn Cột" disabled={!selectedSheet}>
+          <Select placeholder="Chọn Cột" disabled={!selectedSheet} mode={isMultipleY ? 'multiple' : undefined}>
             {availableColumns.map(col => (
-              <Select.Option key={col} value={col}>{col}</Select.Option>
+              <Select.Option key={col.key} value={col.key}>{col.label}</Select.Option>
             ))}
           </Select>
         </Form.Item>

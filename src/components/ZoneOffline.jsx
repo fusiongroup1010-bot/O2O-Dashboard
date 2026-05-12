@@ -6,6 +6,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, LineChart, Line
 } from 'recharts';
 import CustomChartRenderer from './CustomChartRenderer';
+import CustomTooltip from './CustomTooltip';
 
 
 const ZoneOffline = ({ data, onEnlarge, customCharts = [], onDeleteChart }) => {
@@ -17,7 +18,7 @@ const ZoneOffline = ({ data, onEnlarge, customCharts = [], onDeleteChart }) => {
         <CartesianGrid strokeDasharray="3 3" vertical={false} />
         <XAxis dataKey="store" fontSize={11} />
         <YAxis fontSize={11} />
-        <RechartsTooltip cursor={{ fill: '#e6f7ff' }} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
+        <RechartsTooltip content={<CustomTooltip sheetKey="offlineTraffic" />} cursor={{ fill: '#e6f7ff' }} />
         <Bar dataKey="shopsCheckedIn" name="Shops Checked-in" fill="#1890ff" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
@@ -30,7 +31,7 @@ const ZoneOffline = ({ data, onEnlarge, customCharts = [], onDeleteChart }) => {
         <CartesianGrid strokeDasharray="3 3" vertical={false} />
         <XAxis dataKey="store" fontSize={11} />
         <YAxis fontSize={11} />
-        <RechartsTooltip cursor={{ fill: '#e6f7ff' }} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
+        <RechartsTooltip content={<CustomTooltip sheetKey="offlineSales" />} cursor={{ fill: '#e6f7ff' }} />
         <Bar dataKey="qtySold" name="Quantity Sold" fill="#52c41a" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
@@ -43,7 +44,7 @@ const ZoneOffline = ({ data, onEnlarge, customCharts = [], onDeleteChart }) => {
         <CartesianGrid strokeDasharray="3 3" vertical={false} />
         <XAxis dataKey="sku" fontSize={11} />
         <YAxis fontSize={11} />
-        <RechartsTooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
+        <RechartsTooltip content={<CustomTooltip sheetKey="skuSampling" />} cursor={{ fill: 'transparent' }} />
         <Legend iconType="circle" wrapperStyle={{ fontSize: 11, bottom: -10 }} />
         <Bar dataKey="qtySold" name="Qty Sold" stackId="a" fill="#1890ff" />
         <Bar dataKey="samples" name="Samples" stackId="a" fill="#fa8c16" radius={[4, 4, 0, 0]} />

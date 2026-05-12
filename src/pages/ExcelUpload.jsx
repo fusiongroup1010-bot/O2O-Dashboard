@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, message, Table, Tabs, Input, Button, Space, Popconfirm, DatePicker, Dropdown } from 'antd';
+import { Card, Typography, message, Table, Tabs, Input, Button, Space, Popconfirm, DatePicker, Dropdown, Modal, Select } from 'antd';
 import { SaveOutlined, ExportOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { useDashboard } from '../context/DataContext';
 import * as XLSX from 'xlsx';
 import dayjs from 'dayjs';
+import { TAB_MAP } from '../config/dashboardConfig';
 
 const { Title, Text } = Typography;
 
@@ -14,6 +15,16 @@ const ExcelEditor = () => {
   const [isColModalOpen, setIsColModalOpen] = useState(false);
   const [colModalData, setColModalData] = useState({ sheetKey: '', refKey: '', direction: '' });
   const [newColName, setNewColName] = useState('');
+  const [skuSamplingUnit, setSkuSamplingUnit] = useState('kg');
+
+  const parseWeightToKg = (valStr) => {
+    if (!valStr) return 0;
+    const str = String(valStr).toLowerCase().trim();
+    const num = parseFloat(str) || 0;
+    if (str.includes('tấn') || str.includes('ton')) return num * 1000;
+    if (str.endsWith('g') && !str.endsWith('kg')) return num / 1000;
+    return num; 
+  };
 
 
   useEffect(() => {
@@ -194,9 +205,9 @@ const ExcelEditor = () => {
 
   // --- Static Column Definitions ---
   const t = (k, vi, en, render, width) => ({ key: k, dataIndex: k, titleVi: vi, titleEn: en, render, width });
-  const tInp = (s, k, vi, en) => t(k, vi, en, (v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange(s, i, k, e.target.value)} />);
-  const tNum = (s, k, vi, en) => t(k, vi, en, (v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange(s, i, k, e.target.value)} />);
-  const tUnit = (s, k) => t(k, 'Đơn vị', 'Unit', (v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange(s, i, k, e.target.value)} style={{width: 80, color: '#888'}} />);
+  const tInp = (s, k, vi, en, width) => t(k, vi, en, (v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange(s, i, k, e.target.value)} style={width ? {minWidth: width - 20} : {}} />, width);
+  const tNum = (s, k, vi, en, width) => t(k, vi, en, (v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange(s, i, k, e.target.value)} style={width ? {minWidth: width - 20} : {}} />, width);
+  const tUnit = (s, k, width) => t(k, 'Đơn vị', 'Unit', (v, _, i) => <Input.TextArea autoSize={{ minRows: 1, maxRows: 5 }} value={v} onChange={e => handleArrayChange(s, i, k, e.target.value)} style={{width: (width || 80) - 20, color: '#888'}} />, width || 80);
   const tDate = (s) => t('date', 'Ngày', 'Date', (v, _, i) => <DatePicker value={v ? dayjs(v, 'YYYY-MM-DD') : dayjs(selectedDate, 'YYYY-MM-DD')} format="YYYY-MM-DD" onChange={(_, ds) => handleArrayChange(s, i, 'date', ds || selectedDate)} style={{width: '100%'}} />, 140);
 
   const getSheetColumns = (sheetKey) => {
@@ -257,8 +268,34 @@ const ExcelEditor = () => {
         tDate(sheetKey), tInp(sheetKey, 'region', 'Khu vực', 'Region'), tInp(sheetKey, 'store', 'Điểm bán', 'Store'), tNum(sheetKey, 'qtySold', 'Lượng hàng bán được', 'Quantity Sold'), tUnit(sheetKey, 'unit_qtySold'), tInp(sheetKey, 'note', 'Ghi chú', 'Note')
       ];
       case 'skuSampling': return [
-        tDate(sheetKey), tInp(sheetKey, 'sku', 'Mã SKU', 'SKU'), tNum(sheetKey, 'qtySold', 'SL bán được', 'Qty Sold'), tUnit(sheetKey, 'unit_qtySold'), tNum(sheetKey, 'samples', 'Sample phát đi', 'Samples Distributed'), tUnit(sheetKey, 'unit_samples'),
-        t('override_total', 'Tổng cộng', 'Total', (_, r, i) => <Input value={r.override_total !== undefined ? r.override_total : ((r.qtySold || 0) + (r.samples || 0))} onChange={e => handleArrayChange(sheetKey, i, 'override_total', e.target.value)} style={{ fontWeight: 'bold' }} />)
+        tDate(sheetKey), 
+        tInp(sheetKey, 'sku', 'Mã SKU', 'SKU', 110), 
+        tNum(sheetKey, 'qtySold', 'SL bán', 'Qty', 70), 
+        tInp(sheetKey, 'quycach', 'Quy cách', 'Spec', 80),
+        tUnit(sheetKey, 'unit_qtySold', 70), 
+        t('totalVolumeSold', 
+          <Space>Tổng KL bán <Select size="small" value={skuSamplingUnit} onChange={setSkuSamplingUnit} onClick={e=>e.stopPropagation()}><Select.Option value="kg">kg</Select.Option><Select.Option value="ton">ton</Select.Option></Select></Space>, 
+          'Total Sold', 
+          (_, r) => {
+             const kg = parseWeightToKg(r.quycach) * (parseFloat(r.qtySold) || 0);
+             const val = skuSamplingUnit === 'ton' ? kg / 1000 : kg;
+             return <Input value={val} readOnly style={{ fontWeight: 'bold', background: '#f5f5f5', minWidth: 80 }} />
+          }, 140),
+        tNum(sheetKey, 'samples', 'Sample', 'Samples', 80), 
+        tInp(sheetKey, 'quycach_sample', 'Quy cách', 'Spec', 80),
+        tUnit(sheetKey, 'unit_samples', 70),
+        t('totalVolumeSample', 'Tổng KL Sample', 'Total Sample', (_, r) => {
+             const kg = parseWeightToKg(r.quycach_sample) * (parseFloat(r.samples) || 0);
+             const val = skuSamplingUnit === 'ton' ? kg / 1000 : kg;
+             return <Input value={val} readOnly style={{ fontWeight: 'bold', background: '#f5f5f5', minWidth: 80 }} />
+        }, 110),
+        t('override_total', 'Tổng cộng KL', 'Total Weight', (_, r, i) => {
+           const klBan = parseWeightToKg(r.quycach) * (parseFloat(r.qtySold) || 0);
+           const klSample = parseWeightToKg(r.quycach_sample) * (parseFloat(r.samples) || 0);
+           const totalKg = klBan + klSample;
+           const val = skuSamplingUnit === 'ton' ? totalKg / 1000 : totalKg;
+           return <Input value={r.override_total !== undefined ? r.override_total : val} onChange={e => handleArrayChange(sheetKey, i, 'override_total', e.target.value)} style={{ fontWeight: 'bold', minWidth: 80 }} />
+        }, 110)
       ];
       case 'csResponse': return [
         tDate(sheetKey), tInp(sheetKey, 'shift', 'Ca', 'Shift'), tNum(sheetKey, 'tickets', 'Số ticket xử lý', 'Tickets Handled'), tUnit(sheetKey, 'unit_tickets'), tNum(sheetKey, 'responseTime', 'TB phản hồi (phút)', 'Avg Response (min)'), tNum(sheetKey, 'rating', 'Rating TB (/5)', 'Avg Rating'),
@@ -277,19 +314,8 @@ const ExcelEditor = () => {
     }
   };
 
-  const TAB_MAP = [
-    { key: 'onlineGmv', name: '03_Online_GMV', titleVi: 'GMV Thực tế vs Mục tiêu', titleEn: 'Actual vs Target GMV', addText: 'Thêm Kênh / Add Channel', defaultRow: { date: selectedDate, channel: 'Mới', target: 0, actual: 0, note: '' } },
-    { key: 'onlineRoas', name: '04_Online_ROAS', titleVi: 'Hiệu quả ROAS', titleEn: 'ROAS Performance', addText: 'Thêm Giờ / Add Time', defaultRow: { date: selectedDate, time: '00:00', channel: 'Shopee', roas: 0 } },
-    { key: 'adsConversion', name: '05_Ads_Conversion', titleVi: 'Chuyển đổi Ads', titleEn: 'Ads Conversion', addText: 'Thêm Giờ / Add Time', defaultRow: { date: selectedDate, time: '00:00', clicks: 0, orders: 0 } },
-    { key: 'inventorySku', name: '06_Inventory_SKU', titleVi: 'Tồn kho theo SKU', titleEn: 'SKU Inventory', addText: 'Thêm SKU / Add SKU', defaultRow: { date: selectedDate, sku: 'Mới', name: '', inventory: 0, salesPerDay: 1 } },
-    { key: 'stockSafety', name: '07_Stock_Safety', titleVi: 'Cảnh báo tồn kho an toàn', titleEn: 'Safety Stock Alert', addText: 'Thêm dòng / Add Row', defaultRow: { date: selectedDate, current: 0, safety: 0, note: '' } },
-    { key: 'orderStatus', name: '08_Order_Status', titleVi: 'Trạng thái đơn hàng', titleEn: 'Order Status', addText: 'Thêm dòng / Add Row', defaultRow: { date: selectedDate, total: 0, success: 0, cancelled: 0, returned: 0, note: '' } },
-    { key: 'offlineTraffic', name: '09_Offline_Traffic', titleVi: 'Lưu lượng khách Offline', titleEn: 'Offline Traffic', addText: 'Thêm dòng / Add Row', defaultRow: { date: selectedDate, region: 'Miền Nam', store: 'Cửa hàng', shopsCheckedIn: 0, note: '' } },
-    { key: 'offlineSales', name: '10_Offline_Sales', titleVi: 'Sản lượng Offline', titleEn: 'Offline Sales Qty', addText: 'Thêm dòng / Add Row', defaultRow: { date: selectedDate, region: 'Miền Nam', store: 'Cửa hàng', qtySold: 0, note: '' } },
-    { key: 'skuSampling', name: '11_SKU_Sampling', titleVi: 'SKU Sampling', titleEn: 'SKU Sampling', addText: 'Thêm dòng / Add Row', defaultRow: { date: selectedDate, sku: 'Mã SKU', qtySold: 0, samples: 0 } },
-    { key: 'csResponse', name: '12_CS_Response', titleVi: 'Phản hồi CS', titleEn: 'CS Response', addText: 'Thêm Ca / Add Shift', defaultRow: { date: selectedDate, shift: 'Mới', tickets: 0, responseTime: 0, rating: 5, note: '' } },
-    { key: 'alertsLog', name: '13_Alerts_Log', titleVi: 'Nhật ký Cảnh báo', titleEn: 'Alerts Log', addText: 'Thêm Cảnh báo / Add Alert', defaultRow: { date: selectedDate, time: '00:00', type: 'CRITICAL', message: '', handler: '', action: '', status: 'Chưa xử lý' } }
-  ];
+  // TAB_MAP is now imported from config/dashboardConfig.js
+
 
   return (
     <div style={{ padding: '20px' }}>
@@ -337,7 +363,7 @@ const ExcelEditor = () => {
           {TAB_MAP.map((tab, idx) => {
             const sheetKey = tab.key;
             return (
-              <Tabs.TabPane tab={tab.name} key={String(idx + 2)}>
+              <Tabs.TabPane tab={<div style={{lineHeight: 1.2, textAlign: 'left'}}><div style={{fontSize: 10, color: '#888', fontWeight: 'bold'}}>{tab.group}</div><div>{tab.name}</div></div>} key={String(idx + 2)}>
                 <Title level={5} style={{lineHeight: 1.2}}>{tab.titleVi}<br/><span style={{fontSize: 12, color: '#888', fontWeight: 'normal'}}>{tab.titleEn}</span></Title>
                 <Table 
                   dataSource={localData[sheetKey]?.map((r, i) => ({ ...r, key: i })) || []} 

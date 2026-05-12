@@ -5,6 +5,7 @@ import {
   ComposedChart, BarChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, ReferenceLine, PieChart, Pie, Cell
 } from 'recharts';
 import CustomChartRenderer from './CustomChartRenderer';
+import CustomTooltip from './CustomTooltip';
 
 
 const ZoneLogistics = ({ data, onEnlarge, customCharts = [], onDeleteChart }) => {
@@ -13,16 +14,14 @@ const ZoneLogistics = ({ data, onEnlarge, customCharts = [], onDeleteChart }) =>
   const adsVsInvData = data?.inventorySku || [];
   const adsVsInvChart = (
     <ResponsiveContainer width="100%" height="100%">
-      <ComposedChart data={adsVsInvData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+      <BarChart data={adsVsInvData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" vertical={false} />
         <XAxis dataKey="sku" fontSize={11} />
-        <YAxis yAxisId="left" fontSize={11} />
-        <YAxis yAxisId="right" orientation="right" fontSize={11} tickFormatter={(v) => `$${v}`} />
-        <RechartsTooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
+        <YAxis fontSize={11} />
+        <RechartsTooltip content={<CustomTooltip sheetKey="inventorySku" />} cursor={{ fill: '#e6f7ff' }} />
         <Legend iconType="circle" wrapperStyle={{ fontSize: 11, bottom: -10 }} />
-        <Bar yAxisId="left" dataKey="inventory" name="Inventory" fill="#1890ff" barSize={20} radius={[4, 4, 0, 0]} />
-        <Line yAxisId="right" type="monotone" dataKey="ads" name="Ads ($)" stroke="#fa8c16" strokeWidth={3} dot={{ r: 4 }} />
-      </ComposedChart>
+        <Bar dataKey="inventory" name="Inventory" fill="#1890ff" barSize={30} radius={[4, 4, 0, 0]} />
+      </BarChart>
     </ResponsiveContainer>
   );
 
@@ -38,7 +37,7 @@ const ZoneLogistics = ({ data, onEnlarge, customCharts = [], onDeleteChart }) =>
         <CartesianGrid strokeDasharray="3 3" vertical={false} />
         <XAxis dataKey="name" fontSize={11} />
         <YAxis fontSize={11} domain={[0, maxStock + 1000]} />
-        <RechartsTooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
+        <RechartsTooltip content={<CustomTooltip sheetKey="stockSafety" />} cursor={{ fill: 'transparent' }} />
         <Bar dataKey="current" name="Current Stock" fill={stockRow.current < globalSafetyStock ? '#f5222d' : '#1890ff'} barSize={60} radius={[4, 4, 0, 0]} />
         <ReferenceLine y={globalSafetyStock} label={{ position: 'top', value: 'Safety', fill: '#fa8c16', fontSize: 11, fontWeight: 'bold' }} stroke="#fa8c16" strokeDasharray="3 3" strokeWidth={2} />
       </BarChart>
@@ -60,7 +59,7 @@ const ZoneLogistics = ({ data, onEnlarge, customCharts = [], onDeleteChart }) =>
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
           ))}
         </Pie>
-        <RechartsTooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
+        <RechartsTooltip content={<CustomTooltip sheetKey="orderStatus" />} />
       </PieChart>
     </ResponsiveContainer>
   );
@@ -77,7 +76,7 @@ const ZoneLogistics = ({ data, onEnlarge, customCharts = [], onDeleteChart }) =>
   return (
     <Row gutter={[0, 16]}>
       <Col span={24}>
-        <Card title={getTitle('[1] Chi phí Ads & Tồn kho', 'Ads Spend vs Inventory')} size="small" bordered={false} hoverable onClick={() => onEnlarge(getTitle('[1] Chi phí Ads & Tồn kho', 'Ads Spend vs Inventory'), <div style={{height: 400}}>{adsVsInvChart}</div>)} bodyStyle={cardBodyStyle}>
+        <Card title={getTitle('[1] Tồn kho từng SKU', 'SKU Inventory')} size="small" bordered={false} hoverable onClick={() => onEnlarge(getTitle('[1] Tồn kho từng SKU', 'SKU Inventory'), <div style={{height: 400}}>{adsVsInvChart}</div>)} bodyStyle={cardBodyStyle}>
           {adsVsInvChart}
         </Card>
       </Col>

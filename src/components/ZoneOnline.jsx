@@ -6,6 +6,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, BarChart, Bar
 } from 'recharts';
 import CustomChartRenderer from './CustomChartRenderer';
+import CustomTooltip from './CustomTooltip';
 
 
 const ZoneOnline = ({ data, onEnlarge, customCharts = [], onDeleteChart }) => {
@@ -46,8 +47,10 @@ const ZoneOnline = ({ data, onEnlarge, customCharts = [], onDeleteChart }) => {
   const targetRoas = data?.cauHinh?.roasMin || 5.5;
 
   const gaugeOption = {
+    tooltip: { formatter: '{b} : {c}' },
     series: [
       {
+        name: 'ROAS',
         type: 'gauge',
         startAngle: 180,
         endAngle: 0,
@@ -61,8 +64,9 @@ const ZoneOnline = ({ data, onEnlarge, customCharts = [], onDeleteChart }) => {
         axisTick: { show: false },
         splitLine: { length: 15, lineStyle: { width: 2, color: '#999' } },
         axisLabel: { distance: 20, color: '#999', fontSize: 12 },
-        detail: { valueAnimation: true, formatter: '{value}', color: 'auto', fontSize: 32, offsetCenter: [0, '40%'] },
-        data: [{ value: roas }]
+        title: { offsetCenter: [0, '15%'], fontSize: 14 },
+        detail: { valueAnimation: true, formatter: '{value}', color: 'auto', fontSize: 32, offsetCenter: [0, '55%'] },
+        data: [{ name: 'ROAS', value: roas }]
       }
     ]
   };
@@ -79,7 +83,8 @@ const ZoneOnline = ({ data, onEnlarge, customCharts = [], onDeleteChart }) => {
   // 3. Ads vs Conversion
   const adsChartData = (data?.adsConversion || []).map(item => ({
     time: item.time,
-    conversion: item.clicks > 0 ? Number(((item.orders / item.clicks) * 100).toFixed(2)) : 0
+    conversion: item.clicks > 0 ? Number(((item.orders / item.clicks) * 100).toFixed(2)) : 0,
+    note: item.note // Pass note if any
   }));
 
   const adsChart = (
@@ -88,7 +93,7 @@ const ZoneOnline = ({ data, onEnlarge, customCharts = [], onDeleteChart }) => {
         <CartesianGrid strokeDasharray="3 3" vertical={false} />
         <XAxis dataKey="time" fontSize={11} />
         <YAxis orientation="left" fontSize={11} tickFormatter={(v) => `${v}%`} />
-        <RechartsTooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
+        <RechartsTooltip content={<CustomTooltip sheetKey="adsConversion" />} />
         <Legend iconType="circle" wrapperStyle={{ fontSize: 11, bottom: -10 }} />
         <Line type="monotone" dataKey="conversion" name="Conv. (%)" stroke="#1890ff" strokeWidth={3} dot={{ r: 4 }} />
       </LineChart>
